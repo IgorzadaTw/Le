@@ -1,62 +1,110 @@
 document.addEventListener('DOMContentLoaded', function() {
 
-    // --- Música de fundo ---
-    const audio = new Audio('igor4 (Extend).mp3'); // Caminho do arquivo da música
-    audio.loop = true; // Faz a música tocar em loop
-    audio.volume = 0.5; // Volume inicial (0.0 a 1.0)
+  // ----------------------------
+  // ÁUDIO: setup + fallback UI
+  // ----------------------------
+  const audioElement = document.getElementById('bg-audio');
+  let audio = audioElement ? audioElement : new Audio('musica.mp3');
+  audio.loop = true;
+  audio.volume = 0.5;
+  audio.preload = 'auto';
 
-    // Tenta tocar automaticamente (nem todos navegadores permitem sem interação)
-    audio.play().catch(() => {
-        // Se o navegador bloquear, cria um botão pra tocar
-        const playButton = document.createElement('button');
-        playButton.textContent = '▶️ Tocar Música';
-        playButton.style.position = 'fixed';
-        playButton.style.bottom = '20px';
-        playButton.style.right = '20px';
-        playButton.style.padding = '10px 20px';
-        playButton.style.fontSize = '16px';
-        playButton.style.borderRadius = '10px';
-        playButton.style.border = 'none';
-        playButton.style.cursor = 'pointer';
-        playButton.style.background = '#ff4d6d';
-        playButton.style.color = '#fff';
-        playButton.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
-        
-        playButton.addEventListener('click', () => {
-            audio.play();
-            playButton.remove(); // Remove o botão depois de começar
-        });
+  const musicToggleBtn = document.getElementById('music-toggle');
 
-        document.body.appendChild(playButton);
-    });
-
-    // --- Animação 1: Corações Flutuantes ---
-    const heartContainer = document.querySelector('.heart-container');
-    const numberOfHearts = 30; // Quantidade de corações
-
-    for (let i = 0; i < numberOfHearts; i++) {
-        let heart = document.createElement('div');
-        heart.classList.add('heart');
-        heart.innerHTML = '❤';
-        heart.style.left = Math.random() * 100 + 'vw';
-        heart.style.animationDuration = (Math.random() * 5 + 10) + 's';
-        heart.style.animationDelay = Math.random() * 10 + 's';
-        heart.style.fontSize = (Math.random() * 10 + 10) + 'px';
-        heartContainer.appendChild(heart);
+  // Função pra atualizar o botão (ícone/texto)
+  function updateButton() {
+    if (!musicToggleBtn) return;
+    if (audio.paused) {
+      musicToggleBtn.textContent = '▶️ Tocar';
+    } else {
+      musicToggleBtn.textContent = '⏸️ Pausar';
     }
+  }
 
-    // --- Animação 2: Aparecer ao rolar a página ---
-    const animatedElements = document.querySelectorAll('.animate-on-scroll');
+  // Tenta tocar automaticamente. Muitos navegadores bloqueiam autoplay com som.
+  audio.play().then(() => {
+    // tocou — esconde botão se existir
+    if (musicToggleBtn) musicToggleBtn.style.display = 'none';
+  }).catch(() => {
+    // autoplay bloqueado -> mostra botão pra usuário
+    if (musicToggleBtn) {
+      musicToggleBtn.style.display = 'block';
+      // primeiro clique inicia áudio (alguns navegadores permitem interação para permitir som)
+      musicToggleBtn.addEventListener('click', function onFirstClick() {
+        audio.play();
+        updateButton();
+        // muda comportamento depois: serve pra alternar play/pause
+        musicToggleBtn.removeEventListener('click', onFirstClick);
+      });
+    }
+  });
 
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-                observer.unobserve(entry.target);
-            }
-        });
-    }, { threshold: 0.1 });
+  // Se o botão existir, torna-o toggle play/pause após áudio ter sido iniciado
+  if (musicToggleBtn) {
+    musicToggleBtn.addEventListener('click', () => {
+      if (audio.paused) {
+        audio.play();
+      } else {
+        audio.pause();
+      }
+      updateButton();
+    });
+  }
 
-    animatedElements.forEach(element => observer.observe(element));
+  // Se quiser, podemos começar mudo e desmutar após interação (opcional)
+  // audio.muted = true; // descomente se quiser começar mudo
+
+  // Atualiza botão quando estado do audio muda
+  audio.addEventListener('play', updateButton);
+  audio.addEventListener('pause', updateButton);
+
+  // ----------------------------
+  // Animação 1: Corações Flutuantes
+  // ----------------------------
+  const heartContainer = document.querySelector('.heart-container');
+  const numberOfHearts = 30; // Quantidade de corações
+
+  // Se o elemento não existir, criamos um fallback no body
+  const actualContainer = heartContainer || (function() {
+    const c = document.createElement('div');
+    c.className = 'heart-container';
+    document.body.appendChild(c);
+    return c;
+  })();
+
+  for (let i = 0; i < numberOfHearts; i++) {
+    let heart = document.createElement('div');
+    heart.classList.add('heart');
+    heart.innerHTML = '❤';
+    heart.style.left = Math.random() * 100 + 'vw';
+    heart.style.top = (100 + Math.random() * 20) + 'vh'; // começa um pouco abaixo
+    heart.style.animationDuration = (Math.random() * 6 + 9) + 's'; // 9 a 15s
+    heart.style.animationDelay = (Math.random() * 8) + 's';
+    heart.style.fontSize = (Math.random() * 20 + 14) + 'px';
+    actualContainer.appendChild(heart);
+  }
+
+  // ----------------------------
+  // Animação 2: Aparecer ao rolar a página
+  // ----------------------------
+  const animatedElements = document.querySelectorAll('.animate-on-scroll');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {
+    threshold: 0.1
+  });
+
+  animatedElements.forEach(element => observer.observe(element));
+
+  // ----------------------------
+  // Debug logs úteis (se necessário)
+  // ----------------------------
+  // Se não estiver tocando, verifique caminho do arquivo e console do navegador (F12)
+  if (!audio) console.error('Áudio não inicializado — verifique caminho para musica.mp3');
 });
-
