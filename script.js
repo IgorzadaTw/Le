@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     // --- Música de fundo ---
-    const audio = new Audio('igor4(Extend).mp3'); // Caminho do arquivo da música
+    const audio = new Audio('igor4 (Extend).mp3'); // Caminho do arquivo da música
     audio.loop = true; // Faz a música tocar em loop
     audio.volume = 0.5; // Volume inicial (0.0 a 1.0)
 
@@ -59,3 +59,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
     animatedElements.forEach(element => observer.observe(element));
 });
+
